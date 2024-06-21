@@ -23,7 +23,19 @@ routes.get(
   // Authorization,
   asyncHandler(async function getById(req: Request, res: Response) {
     const params = req.getParams()
-    const data = await OrderService.getById(params.defect_id);
+    const data = await OrderService.getById(req, params.defect_id);
+
+    const buildResponse = BuildResponse.get({ data });
+    return res.status(201).json(buildResponse);
+  })
+);
+
+routes.get(
+  "/defect/offers/:defect_id",
+  // Authorization,
+  asyncHandler(async function getOfferByDefectId(req: Request, res: Response) {
+    const params = req.getParams();
+    const data = await OrderService.getOfferByDefectId(req, params.defect_id);
 
     const buildResponse = BuildResponse.get({ data });
     return res.status(201).json(buildResponse);
@@ -62,6 +74,32 @@ routes.delete(
     const data = await OrderService.delete(params.defect_id);
 
     const buildResponse = BuildResponse.deleted({ data });
+    return res.status(201).json(buildResponse);
+  })
+);
+
+
+routes.post(
+  "/defect/offer/accept",
+  // Authorization,
+  asyncHandler(async function acceptOffer(req: Request, res: Response) {
+    const txn = await req.getTransaction()
+    const data = await OrderService.acceptOffer(req);
+    await txn.commit()
+    const buildResponse = BuildResponse.created({ data });
+    return res.status(201).json(buildResponse);
+  })
+);
+
+
+routes.post(
+  "/defect/offer/reject",
+  // Authorization,
+  asyncHandler(async function rejectOffer(req: Request, res: Response) {
+    const txn = await req.getTransaction()
+    const data = await OrderService.rejectOffer(req);
+    await txn.commit()
+    const buildResponse = BuildResponse.created({ data });
     return res.status(201).json(buildResponse);
   })
 );

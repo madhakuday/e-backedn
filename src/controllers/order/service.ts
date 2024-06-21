@@ -6,6 +6,7 @@ import PluginSqlizeQuery from "../../modules/SqlizeQuery/PluginSqlizeQuery";
 import OdSteps from "../../models/od_step";
 import OdQuestionnaires from "../../models/od_questionnaires";
 import externalApi from "../../helpers/externalAPI"
+import { currentToken } from '../../helpers/token'
 
 class OrderService {
   public static async getAll(req: Request) {
@@ -32,10 +33,12 @@ class OrderService {
     const data = await OrderDefects.findAll({
       ...queryFind,
     });
-
+    const getToken = currentToken(req);
+    const MASTER_BACKED_URL = process.env.MASTER_BACKED_URL;
     const dataWithDevices = await Promise.all(
       data.map(async (defect: any) => {
-        const deviceData = await externalApi.callGetApi('/device/' + defect.device_id, '');
+        
+        const deviceData = await externalApi.callGetApi(MASTER_BACKED_URL+'/device/' + defect.device_id, getToken);
 
         return {
           ...defect.toJSON(),
@@ -43,12 +46,12 @@ class OrderService {
         };
       })
     );
-
+    
     const datawithSteps = await Promise.all(
       dataWithDevices.map(async (data) => {
         const odQuestionnaireData = await Promise.all(
           data.od_questionnaires.map(async (odq: any) => {
-            const deviceData = await externalApi.callGetApi('/question/' + odq.odq_id, '');
+            const deviceData = await externalApi.callGetApi(MASTER_BACKED_URL+'/question/' + odq.odq_id, getToken);
             return {
               ...odq,
               question_title: deviceData?.data?.question_title || '',
@@ -71,12 +74,13 @@ class OrderService {
     }
   }
 
-  public static async getById(id: number) {
+  public static async getById(req: Request, id: number) {
     const order = await OrderDefects.findByPk(id, {
       include: [OdSteps, OdQuestionnaires]
     });
-
-    const deviceData = await externalApi.callGetApi('/device/' + order?.device_id, "",)
+    const getToken = currentToken(req);
+    const MASTER_BACKED_URL = process.env.MASTER_BACKED_URL;
+    const deviceData = await externalApi.callGetApi(MASTER_BACKED_URL+'/device/' + order?.device_id, getToken)
     return { ...order.toJSON(), device: deviceData.data }
   }
 
@@ -123,6 +127,49 @@ class OrderService {
     );
 
     return deleted;
+  }
+
+
+  /**
+   *
+   * @param req Request
+   */
+  public static async getOfferByDefectId(req: Request, defect_id: string) {
+
+    const getToken = currentToken(req);
+    const BASE_URL_EXPERT = process.env.BASE_URL_EXPERT;
+   
+    const data = await externalApi.callGetApi(BASE_URL_EXPERT+ `/offer/offer-by-defect/`+defect_id, getToken);
+    return data;
+  }
+
+  /**
+   *
+   * @param req Request
+   */
+  public static async acceptOffer(req: Request) {
+
+    const getToken = currentToken(req);
+    let payload = req.getBody();
+    const BASE_URL_EXPERT = process.env.BASE_URL_EXPERT;
+   
+    const data = await externalApi.callPostApi(BASE_URL_EXPERT+ `/offer/accept`, getToken, payload);
+    return data;
+  }
+
+
+  /**
+   *
+   * @param req Request
+   */
+  public static async rejectOffer(req: Request) {
+
+    const getToken = currentToken(req);
+    let payload = req.getBody();
+    const BASE_URL_EXPERT = process.env.BASE_URL_EXPERT;
+   
+    const data = await externalApi.callPostApi(BASE_URL_EXPERT+ `/offer/reject`, getToken, payload);
+    return data;
   }
 }
 

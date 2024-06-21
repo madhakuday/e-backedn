@@ -1,12 +1,12 @@
 import axios from 'axios'
 import { encodeQueryData } from './Common';
 
-const BASE_URL = process.env.MASTER_BACKED_URL;
+const BASE_URL = process.env.BASE_URL;
 
 const callPostApi = async (url: any, token: any, obj={}) => {
     let responseData: any = {}; 
   await axios
-    .post(BASE_URL + url, obj, {
+    .post( url, obj, {
         headers: {
           Authorization: 'Bearer ' + token
         }
@@ -22,7 +22,7 @@ const callGetApi = async (url: any, token: any, params={} ) => {
 
     let responseData: any = {};
     await axios
-    .get(BASE_URL + url + encodeQueryData(params), 
+    .get( url + encodeQueryData(params), 
         {
             headers: {
                 Authorization: 'Bearer ' + token
